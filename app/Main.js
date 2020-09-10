@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useReducer, useEffect } from "react";
 import ReactDom from "react-dom";
+import { useImmerReducer } from "use-immer";
 import { BrowserRouter, Switch, Route } from "react-router-dom";
 import Axios from "axios";
 Axios.defaults.baseURL = "http://localhost:8080";
@@ -13,37 +14,88 @@ import Home from "./components/Home";
 import CreatePost from "./components/CreatePost";
 import ViewSinglePost from "./components/ViewSinglePost";
 import FlashMessage from "./components/FlashMessage";
+import Profile from "./components/Profile";
+import EditPost from "./components/EditPost";
+
+import StateContext from "./StateContext";
+import DispatchContext from "./DispatchContext";
 
 function Main() {
-  const [loggedIn, setLoggedIn] = useState(Boolean(localStorage.getItem("complexappToken")));
-  const [flashMassage, setFlashMassage] = useState([]);
+  const initialState = {
+    loggedIn: Boolean(localStorage.getItem("complexappToken")),
+    flashMassage: [],
+    user: {
+      token: localStorage.getItem("complexappToken"),
+      username: localStorage.getItem("complexappUsername"),
+      avatar: localStorage.getItem("complexappAvatar")
+    }
+  };
+  function ourReducer(draft, action) {
+    switch (action.type) {
+      case "login":
+        draft.loggedIn = true;
+        draft.user = action.data;
+        return;
+      case "logout":
+        draft.loggedIn = false;
+        return;
+      case "flashMessage":
+        draft.flashMassage.push(action.value);
+        return;
+    }
+  }
+
+  const [state, dispatch] = useImmerReducer(ourReducer, initialState);
+  //const [loggedIn, setLoggedIn] = useState();
+  //const [flashMassage, setFlashMassage] = useState([]);
+  useEffect(() => {
+    if (state.loggedIn) {
+      localStorage.setItem("complexappToken", state.user.token);
+      localStorage.setItem("complexappUsername", state.user.username);
+      localStorage.setItem("complexappAvatar", state.user.avatar);
+    } else {
+      localStorage.removeItem("complexappToken");
+      localStorage.removeItem("complexappUsername");
+      localStorage.removeItem("complexappAvatar");
+    }
+  }, [state.loggedIn]);
 
   function addFlashMessage(msg) {
     setFlashMassage((prev) => prev.concat(msg));
   }
   return (
-    <BrowserRouter>
-      <FlashMessage msg={flashMassage} />
-      <Header loggedIn={loggedIn} setLoggedIn={setLoggedIn} />
-      <Switch>
-        <Route path="/" exact>
-          {loggedIn ? <Home /> : <HomeGuest />}
-        </Route>
-        <Route path="/post/:id" exact>
-          <ViewSinglePost />
-        </Route>
-        <Route path="/about-us" exact>
-          <About />
-        </Route>
-        <Route path="/terms" exact>
-          <Terms />
-        </Route>
-        <Route path="/create-post" exact>
-          <CreatePost addFlashMessage={addFlashMessage} />
-        </Route>
-      </Switch>
-      <Footer />
-    </BrowserRouter>
+    <StateContext.Provider value={state}>
+      <DispatchContext.Provider value={dispatch}>
+        <BrowserRouter>
+          <FlashMessage msg={state.flashMassage} />
+          <Header />
+          <Switch>
+            <Route path="/" exact>
+              {state.loggedIn ? <Home /> : <HomeGuest />}
+            </Route>
+            <Route path="/post/:id" exact>
+              <ViewSinglePost />
+            </Route>
+            <Route path="/post/:id/edit" exact>
+              <EditPost />
+            </Route>
+            <Route path="/about-us" exact>
+              <About />
+            </Route>
+            <Route path="/terms" exact>
+              <Terms />
+            </Route>
+            <Route path="/create-post" exact>
+              <CreatePost />
+            </Route>
+            <Route path="/profile/:username" exact>
+              <Profile />
+            </Route>
+          </Switch>
+          <Footer />
+        </BrowserRouter>
+      </DispatchContext.Provider>
+    </StateContext.Provider>
   );
 }
 
