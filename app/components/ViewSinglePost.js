@@ -1,12 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import Page from "./Page";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, withRouter } from "react-router-dom";
 import Axios from "axios";
 import LoadingDotsIcon from "./LoadingDotsIcon";
 import ReactMarkdown from "react-markdown";
 import ReactTooltip from "react-tooltip";
+import NotFound from "./NotFound";
+import StateContext from "../StateContext";
+import DispatchContext from "../DispatchContext";
 
-function ViewSinglePost() {
+function ViewSinglePost(props) {
+  const appState = useContext(StateContext);
+  const appDispatch = useContext(DispatchContext);
   const { id } = useParams();
   const [isLoading, setIsLoading] = useState(true);
   const [post, setPost] = useState();
@@ -30,6 +35,9 @@ function ViewSinglePost() {
     };
   }, []);
 
+  if (!isLoading && !post) {
+    return <NotFound />;
+  }
   if (isLoading)
     return (
       <Page title="...">
@@ -39,20 +47,43 @@ function ViewSinglePost() {
   const date = new Date(post.createdDate);
   const dateFormatted = `${date.getMonth() + 1}/ ${date.getDate()}/ ${date.getFullYear()}`;
 
+  function isOwner() {
+    if (appState.loggedIn) {
+      return appState.user.username == post.author.username;
+    }
+    return false;
+  }
+  async function deleteHandler() {
+    const areYouSure = window.confirm("Do you really want to delete this post?");
+    if (areYouSure) {
+      try {
+        const response = await Axios.delete(`/post/${id}`, { data: { token: appState.user.token } });
+        if (response.data == "Success") {
+          appDispatch({ type: "flashMessage", value: "Post was successfully deleted." });
+          props.history.push(`/profile/${appState.user.username}`);
+        }
+      } catch (e) {
+        console.log("There is a problem in delete");
+      }
+    }
+  }
+
   return (
     <Page title={post.title}>
       <div className="d-flex justify-content-between">
         <h2>{post.title}</h2>
-        <span className="pt-2">
-          <Link to={`/post/${post._id}/edit`} data-tip="Edit~" data-for="edit" className="text-primary mr-2">
-            <i className="fas fa-edit"></i>
-          </Link>
-          <ReactTooltip id="edit" className="custom-tooltip" />{" "}
-          <Link data-tip="Delete~" data-for="delete" className="delete-post-button text-danger">
-            <i className="fas fa-trash"></i>
-          </Link>
-          <ReactTooltip id="delete" className="custom-tooltip" />
-        </span>
+        {isOwner() && (
+          <span className="pt-2">
+            <Link to={`/post/${post._id}/edit`} data-tip="Edit~" data-for="edit" className="text-primary mr-2">
+              <i className="fas fa-edit"></i>
+            </Link>
+            <ReactTooltip id="edit" className="custom-tooltip" />{" "}
+            <a onClick={deleteHandler} data-tip="Delete~" data-for="delete" className="delete-post-button text-danger">
+              <i className="fas fa-trash"></i>
+            </a>
+            <ReactTooltip id="delete" className="custom-tooltip" />
+          </span>
+        )}
       </div>
 
       <p className="text-muted small mb-4">
@@ -69,4 +100,4 @@ function ViewSinglePost() {
   );
 }
 
-export default ViewSinglePost;
+export default withRouter(ViewSinglePost);

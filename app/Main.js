@@ -16,6 +16,7 @@ import ViewSinglePost from "./components/ViewSinglePost";
 import FlashMessage from "./components/FlashMessage";
 import Profile from "./components/Profile";
 import EditPost from "./components/EditPost";
+import NotFound from "./components/NotFound";
 
 import StateContext from "./StateContext";
 import DispatchContext from "./DispatchContext";
@@ -90,6 +91,9 @@ function Main() {
             </Route>
             <Route path="/profile/:username" exact>
               <Profile />
+            </Route>
+            <Route>
+              <NotFound />
             </Route>
           </Switch>
           <Footer />
