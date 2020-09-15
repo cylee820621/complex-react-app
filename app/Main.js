@@ -90,16 +90,16 @@ function Main() {
             <Route path="/post/:id/edit" exact>
               <EditPost />
             </Route>
-            <Route path="/about-us" exact>
+            <Route path="/about-us">
               <About />
             </Route>
-            <Route path="/terms" exact>
+            <Route path="/terms">
               <Terms />
             </Route>
-            <Route path="/create-post" exact>
+            <Route path="/create-post">
               <CreatePost />
             </Route>
-            <Route path="/profile/:username" exact>
+            <Route path="/profile/:username">
               <Profile />
             </Route>
             <Route>
